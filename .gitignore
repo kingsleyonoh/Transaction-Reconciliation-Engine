@@ -1,0 +1,42 @@
+# AI Workflow System (proprietary — do not publish)
+.agent/workflows/
+
+# Internal project planning
+docs/progress.md
+docs/*PRD*.md
+docs/*prd*.md
+
+# Environment files
+.env
+.env.local
+
+# Go build artifacts
+/recon
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of `go coverage`
+*.out
+
+# Go workspace file
+go.work
+
+# Dependency directories
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
