@@ -7,13 +7,13 @@
 
 | Layer | Technology |
 |-------|-----------|
-| Language | Go 1.22 |
+| Language | Go 1.26.1 |
 | Framework | Chi router (go-chi/chi) |
 | Database | PostgreSQL 16 |
 | Cache | Redis 7 |
 | ORM | None — raw SQL with sqlx |
 | Migrations | golang-migrate/migrate |
-| Hosting | Docker on Railway |
+| Hosting | Docker on DigitalOcean VPS (Traefik) |
 | Test Runner | Go stdlib testing + testify |
 | Build Tool | Makefile + `go build` |
 | Logging | zerolog (JSON to stdout) |
@@ -26,55 +26,34 @@
 transaction-reconciliation-engine/
 ├── cmd/
 │   └── recon/
-│       └── main.go                  # Entry point, CLI + server setup
+│       └── main.go                  # Entry point (stub — wiring TODO)
 ├── internal/
-│   ├── adapter/                     # Source-specific adapters
-│   │   ├── stripe.go                # Stripe Balance Transactions adapter
-│   │   ├── paypal.go                # PayPal Transaction Search adapter
-│   │   ├── bankfile.go              # MT940/CAMT.053 parser adapter
-│   │   └── adapter.go              # SourceAdapter interface definition
-│   ├── api/                        # HTTP handlers
-│   │   ├── router.go               # Chi router setup + middleware
-│   │   ├── ingest_handler.go       # Transaction ingestion endpoints
-│   │   ├── reconcile_handler.go    # Reconciliation endpoints
-│   │   ├── discrepancy_handler.go  # Discrepancy CRUD endpoints
-│   │   ├── report_handler.go       # Report generation endpoints
-│   │   ├── upload_handler.go       # File upload endpoint
-│   │   ├── health_handler.go       # Health check endpoint
-│   │   └── middleware.go           # Auth, logging, rate limiting
-│   ├── engine/                     # Core reconciliation logic
-│   │   ├── reconciler.go           # Matching cascade engine
-│   │   ├── rules.go                # Match rule definitions
-│   │   └── scorer.go               # Confidence scoring
-│   ├── domain/                     # Domain types
-│   │   ├── transaction.go          # Transaction entity
+│   ├── adapter/                     # (planned) Source-specific adapters
+│   ├── api/                        # (planned) HTTP handlers
+│   ├── engine/                     # (planned) Core reconciliation logic
+│   ├── domain/                     # Domain types ✓
+│   │   ├── transaction.go          # Transaction + IngestRequest/Result
 │   │   ├── match.go                # Match entity
 │   │   ├── discrepancy.go          # Discrepancy entity
 │   │   ├── reconciliation.go       # ReconcileRequest/Result
+│   │   ├── source.go               # Source + IngestionLog entities
 │   │   └── report.go               # Report types
-│   ├── repository/                 # Database access
-│   │   ├── transaction_repo.go     # Transaction CRUD
-│   │   ├── match_repo.go           # Match CRUD
-│   │   ├── discrepancy_repo.go     # Discrepancy CRUD
-│   │   ├── run_repo.go             # Reconciliation run CRUD
-│   │   └── db.go                   # Connection pool setup
-│   ├── scheduler/                  # Background job scheduling
-│   │   └── scheduler.go            # Ticker-based job runner
-│   ├── report/                     # Report generation
-│   │   ├── settlement.go           # Settlement report builder
-│   │   └── csv.go                  # CSV export
-│   └── config/                     # Configuration
+│   ├── repository/                 # (planned) Database access
+│   ├── scheduler/                  # (planned) Background job scheduling
+│   ├── report/                     # (planned) Report generation
+│   └── config/                     # Configuration ✓
 │       └── config.go               # Env var loading + validation
-├── migrations/                     # SQL migration files
-├── tests/                          # Integration tests + fixtures
-│   ├── fixtures/
-│   │   ├── stripe/                 # Stripe API response recordings
-│   │   ├── paypal/                 # PayPal API response recordings
-│   │   └── bankfiles/              # Sample MT940/CAMT.053 files
-│   ├── reconciler_test.go
-│   ├── ingest_test.go
-│   └── api_test.go
+├── migrations/                     # SQL migration files ✓
+│   ├── 000001_create_tables.up.sql
+│   └── 000001_create_tables.down.sql
+├── tests/fixtures/                 # (planned) Integration tests + fixtures
+│   ├── stripe/
+│   ├── paypal/
+│   └── bankfiles/
 ├── docs/
+│   ├── progress.md
+│   └── transaction-reconciliation-engine_prd.md
+├── .env                            # Local dev config (gitignored)
 ├── .env.example
 ├── Dockerfile
 ├── docker-compose.yml
@@ -82,6 +61,8 @@ transaction-reconciliation-engine/
 ├── go.mod
 └── go.sum
 ```
+
+> ✓ = implemented, (planned) = directory exists but no source files yet
 
 ## Key Modules
 

@@ -1,0 +1,30 @@
+# Version control
+.git
+.gitignore
+
+# Dependencies (rebuilt in container)
+node_modules
+vendor
+
+# Documentation & AI workflows (not needed in image)
+docs/
+.agent/
+*.md
+LICENSE
+
+# Environment (injected at runtime)
+.env
+.env.*
+
+# IDE & OS
+.vscode
+.idea
+*.swp
+.DS_Store
+Thumbs.db
+
+# Build artifacts (rebuilt in container)
+dist
+build
+tmp
+coverage

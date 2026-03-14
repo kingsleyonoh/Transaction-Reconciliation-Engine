@@ -83,8 +83,17 @@ You have a vast library of specialized skills available. **Use them proactively*
 - **Writing tests** → invoke the testing skill for your language/framework
 - **Designing a database schema or API** → invoke the design/architecture skill
 - **Debugging a bug** → invoke `systematic-debugging` before guessing
-- **Deploying or containerizing** → invoke the deployment skill
+- **Deploying or containerizing** → invoke the deployment skill for your platform
+- **Integrating a payment provider, email service, or external API** → check for a dedicated skill first
+- **Working with AI/LLM features** → invoke the relevant AI skill (RAG, agents, prompts)
+- **Writing documentation** → invoke the documentation skill for the format you need
 - **Working with Go patterns** → check `go-concurrency-patterns`, `clean-code`
+- **Unfamiliar domain or new library** → research skill first, then build
+
+### What NOT to Do
+- ❌ Skip skills because "I already know this" — the skill may have guardrails you'd miss
+- ❌ Hardcode patterns from memory when a skill has the latest best practices
+- ❌ Use a generic approach when a project-specific skill exists
 
 ## Git Commit Convention
 
@@ -219,7 +228,9 @@ docs(context): update CODEBASE_CONTEXT after adding scheduler
 - Tests FIRST, then implementation. Never the reverse.
 - You MUST create test files BEFORE creating implementation files.
 - You MUST run tests and see RED (failures) before writing any implementation.
+- You MUST show the RED PHASE EVIDENCE output (as defined in `implement-next.md` Step 5) before proceeding to Green Phase.
 - The ONLY exception: `[SETUP]` items (scaffolding, config, infrastructure) where no testable behavior exists yet.
+- If you catch yourself implementing without tests — STOP, delete the implementation, write the tests first.
 
 ### Always Do These
 - **Test BEHAVIOR, not implementation.**
@@ -230,16 +241,22 @@ docs(context): update CODEBASE_CONTEXT after adding scheduler
 
 ## Test Quality Checklist (Anti-False-Confidence)
 
+Before moving from RED → GREEN, verify ALL applicable categories have tests:
+
 | # | Category | What to Test |
 |---|----------|-------------|
 | 1 | Happy path | Does it work with valid, normal input? |
 | 2 | Required fields | Does it reject nil/empty for required fields? |
 | 3 | Uniqueness | Does it enforce unique constraints (dedup_key)? |
 | 4 | Defaults | Do default values apply correctly when field is omitted? |
-| 5 | FK relationships | Do foreign keys enforce constraints correctly? |
-| 6 | Edge cases | Empty strings, zero, negative, very long strings, special chars |
-| 7 | Error paths | What happens when Redis is down, DB is down, input is malformed? |
-| 8 | Idempotency | Does re-running produce the same result? |
+| 5 | FK relationships | Do foreign keys enforce CASCADE/PROTECT correctly? |
+| 6 | Tenant isolation | Can Source A see Source B's data? (if multi-source) |
+| 7 | Edge cases | Empty strings, zero, negative, very long strings, special chars |
+| 8 | Error paths | What happens when Redis is down, DB is down, input is malformed? |
+| 9 | String representation | Does `String()` / `Stringer` return something meaningful? |
+| 10 | Meta options | Are ordering, indexes, and constraints working? |
+
+**If a category applies and you skip it, you're cheating.** If RED phase shows fewer than 2 failures, add more tests — you're probably not testing enough.
 
 ## Test Modularity Rules
 1. **One test file per package** — `foo_test.go` in same package or `foo_integration_test.go` in `tests/`
@@ -248,16 +265,23 @@ docs(context): update CODEBASE_CONTEXT after adding scheduler
 4. **Tests are independent** — no shared state, no ordering dependency
 5. **Any single test can run in isolation** — `go test -run TestName ./internal/engine/`
 6. **Test names describe business behavior** — `TestReconciler_ExactMatchProducesConfidenceOne`
+7. **No test helpers longer than 10 lines** — extract to a `tests/helpers.go` if needed
 
 ## Live Integration Testing (Mock Policy)
 
 ### The Rule: Don't Mock What You Own
 If you control the service and can run it locally → test against the real thing.
 
+### Service Fallback Hierarchy
+When deciding how to test a service, follow this order:
+1. **Local instance** (best) — Docker, CLI, emulator on your machine
+2. **Cloud dev instance** (good) — dedicated test project / staging environment
+3. **Mock** (last resort) — only when options 1 and 2 are impossible
+
 ### Test LIVE (Never Mock)
 - PostgreSQL database (local Docker) — validates schema, column names, constraints, query behavior
 - Redis (local Docker) — validates dedup keys, locks
-- Your own API endpoints — call the actual route via httptest
+- Your own API endpoints — call the actual route via `httptest`
 - Your own reconciliation engine — test the real function
 
 ### Mock ONLY These
@@ -265,6 +289,11 @@ If you control the service and can run it locally → test against the real thin
 - PayPal API calls (use recorded fixtures in `tests/fixtures/paypal/`)
 - Bank file content (use static files in `tests/fixtures/bankfiles/`)
 - Sentry error reporting
+- Rate-limited external APIs you don't control
+- Services with irreversible side effects
+
+### Why This Matters
+A mock that returns `{ "source_id": 1 }` will pass even when the real column is `sourceID`. A mock that returns success will pass even when the real constraint rejects your data. Mocks test your ASSUMPTIONS about the service. Live tests test REALITY.
 
 ### Test Cleanup
 - Each test MUST clean up after itself
@@ -285,9 +314,61 @@ If you control the service and can run it locally → test against the real thin
 
 ## Deployment Platform
 
-### Default: Railway
-- Deploy Docker container to Railway.
-- PostgreSQL 16 as Railway managed add-on.
-- Redis 7 as Railway managed add-on.
-- `git push` → Railway auto-deploys from `main` branch.
-- Migrations run automatically on startup via `golang-migrate` auto-migrate.
+### Default: DigitalOcean VPS (Portfolio / Personal Projects)
+- **All portfolio projects deploy to DigitalOcean VPS** via Docker + Traefik reverse proxy.
+- Every project ships with `Dockerfile`, `docker-compose.prod.yml`, and `.dockerignore`.
+- Traefik auto-routes `project-slug.kingsleyonoh.com` with free SSL via Let's Encrypt.
+- Deploy: `ssh` into VPS → `git pull` → `docker compose -f docker-compose.prod.yml up -d`.
+- This enables flat hosting cost (~$6/mo total) regardless of project count.
+
+### Client / Production Projects
+- **Railway** is the default for client-facing production deployments.
+- Railway supports Node.js, Python, Go, Docker, PostgreSQL, Redis — covers most stacks.
+- Use `railway up` CLI or Railway's GitHub integration for deployment.
+
+### Frontend Exception
+- **Vercel** is an option for frontend-only deployments (Next.js, React SPAs).
+- If the project is full-stack, one platform hosts both frontend and backend.
+- If the user prefers Vercel for the frontend → split: Vercel (frontend) + Railway/DigitalOcean (backend).
+
+### Client Override
+- If the PRD specifies a different platform (AWS, Render, GCP, Azure), use that instead.
+- The `/setup-ci` workflow reads this section to determine deployment targets.
+
+### Deployment Files (Every Project)
+- `Dockerfile` — multi-stage build (builder → production). Bootstrap customizes base image and build commands per stack.
+- `docker-compose.prod.yml` — Traefik labels for automatic subdomain routing + SSL. Bootstrap replaces `PROJECT_SLUG` with actual project name.
+- `.dockerignore` — keeps images lean (excludes docs, .agent, node_modules, .git).
+
+## Public Demo Security
+
+Every deployed project MUST implement these protections. The VPS costs money — unprotected endpoints waste resources and invite abuse, regardless of whether the project uses AI or not.
+
+| # | Layer | Rule | Applies to |
+|---|-------|------|------------|
+| 1 | **Rate Limiting** | Per-IP throttle: 60 req/min for general endpoints, 5 req/day for expensive operations (AI inference, heavy compute, external API calls). | All deployed projects |
+| 2 | **Usage Caps** | When daily cap is hit → return HTTP 429 with body: *"Demo limit reached. Contact kingsley@kingsleyonoh.com for full access."* | All deployed projects |
+| 3 | **API Key Proxy** | All external API calls MUST go through the backend. Keys live in `.env` only — never in client bundles, never in API responses, never in logs. | Projects with paid APIs |
+| 4 | **Input Validation** | Set max input length per endpoint. Sanitize all user input before processing. Reject bad input before it costs money or CPU. | All deployed projects |
+| 5 | **Response Sanitization** | Strip internal details from error responses. No stack traces, no system prompts, no file paths, no internal IPs in production error responses. | All deployed projects |
+| 6 | **Source Protection** | Minified builds only. No source maps in production. Add `X-Robots-Tag: noai` header on API endpoints. No Swagger/OpenAPI docs exposed in production demo. | All deployed projects |
+| 7 | **Demo Banner** | Add to the project README: *"🔒 This is a live demo with rate limits (5 requests/day). Contact kingsley@kingsleyonoh.com for full access."* | Spec (portfolio) projects |
+| 8 | **CORS Lock** | CORS origin limited to the demo domain. Never use wildcard `*` in production. | All deployed projects |
+
+### Resource Limits
+- `docker-compose.prod.yml` must set `deploy.resources.limits` (default: 512M RAM, 0.5 CPU).
+- Bootstrap reminds: keep limits tight. The VPS is shared across all projects.
+
+### When `DEMO_MODE` Applies
+- If the project uses paid external APIs (OpenRouter, OpenAI, Stripe test keys, etc.), bootstrap adds `DEMO_MODE=true` to `.env.example`.
+- Application code should check `DEMO_MODE` to enforce stricter limits on expensive operations.
+- When `DEMO_MODE=true`: rate limits are tighter, usage caps are lower, verbose error messages are suppressed.
+
+## Environment Variables
+
+### `.env.example` Is the Source of Truth
+- **`.env.example`** defines the **structure and shape** of all environment variables the project needs.
+- **`.env`** contains real secrets and is gitignored — the AI MUST NEVER attempt to read it.
+- When you need to know what env vars the project uses → read `.env.example`.
+- When adding a new env var → add it to `.env.example` first (with a placeholder value), then document it in `CODEBASE_CONTEXT.md`.
+- Bootstrap generates `.env.example` from the PRD. `/sync-context` keeps `CODEBASE_CONTEXT.md` in sync with it.
