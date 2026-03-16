@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/domain"
@@ -421,5 +422,48 @@ func TestBankFileAdapter_ParseCAMT053_Malformed(t *testing.T) {
 	// If partial results returned, should have warnings
 	if result != nil && len(result.Warnings) == 0 {
 		t.Error("expected warnings for malformed CAMT.053, got none")
+	}
+}
+
+// TestBankFileAdapter_ParseMT940_Latin1Encoding verifies that MT940 files encoded
+// in Latin-1 (ISO-8859-1) parse correctly. European banks commonly use Latin-1 for
+// characters like ä, ö, ü in counterparty names and descriptions.
+func TestBankFileAdapter_ParseMT940_Latin1Encoding(t *testing.T) {
+	adapter := NewBankFileAdapter()
+
+	data, err := os.ReadFile(filepath.Join("../../tests/fixtures/bankfiles", "sample_mt940_latin1.txt"))
+	if err != nil {
+		t.Fatalf("failed to read Latin-1 MT940 fixture: %v", err)
+	}
+
+	result, err := adapter.ParseFile(context.Background(), data, "bank_latin1")
+	if err != nil {
+		t.Fatalf("ParseFile() returned error for Latin-1 MT940: %v", err)
+	}
+
+	if result == nil || len(result.Transactions) == 0 {
+		t.Fatal("expected at least one transaction from Latin-1 MT940")
+	}
+
+	if result.Transactions[0].SourceID != "bank_latin1" {
+		t.Errorf("SourceID = %q, want %q", result.Transactions[0].SourceID, "bank_latin1")
+	}
+
+	if result.Transactions[0].Amount != 25000 {
+		t.Errorf("Amount = %d, want 25000 (250.00 EUR)", result.Transactions[0].Amount)
+	}
+
+	if result.Transactions[0].Direction != domain.DirectionDebit {
+		t.Errorf("Direction = %q, want %q", result.Transactions[0].Direction, domain.DirectionDebit)
+	}
+
+	// The counterparty should preserve the non-ASCII character — either as raw Latin-1
+	// byte (0xFC) or as the UTF-8 equivalent (ü). Both are acceptable.
+	cp := result.Transactions[0].Counterparty
+	if cp == "" {
+		t.Error("Counterparty is empty, expected non-empty value from Latin-1 field")
+	}
+	if !strings.Contains(cp, "M") || !strings.Contains(cp, "ller") {
+		t.Errorf("Counterparty = %q, expected to contain 'M...ller' pattern", cp)
 	}
 }
