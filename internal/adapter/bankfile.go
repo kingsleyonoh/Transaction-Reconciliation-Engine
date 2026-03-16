@@ -37,6 +37,10 @@ func (a *BankFileAdapter) ParseFile(ctx context.Context, data []byte, sourceID s
 		return a.parseMT940(content, sourceID)
 	}
 
+	if isCAMT053(content) {
+		return a.parseCAMT053(data, sourceID)
+	}
+
 	return nil, fmt.Errorf("unsupported bank file format")
 }
 
