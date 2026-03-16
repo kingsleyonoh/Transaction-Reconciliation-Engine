@@ -1,0 +1,35 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "txn_4RtU5xM2dTnS7OsZ",
+      "object": "balance_transaction",
+      "amount": 8750,
+      "currency": "usd",
+      "description": "Payment from Delta Corp",
+      "fee": 284,
+      "net": 8466,
+      "type": "charge",
+      "status": "available",
+      "created": 1709510700,
+      "available_on": 1709597100,
+      "source": "ch_5RtU5xM2dTnS7OsZ0xFGHijk"
+    },
+    {
+      "id": "txn_5SuV6yN3eUoT8PtA",
+      "object": "balance_transaction",
+      "amount": 99900,
+      "currency": "eur",
+      "description": "Payment from Epsilon GmbH",
+      "fee": 2907,
+      "net": 96993,
+      "type": "charge",
+      "status": "available",
+      "created": 1709510800,
+      "available_on": 1709597200,
+      "source": "ch_6SuV6yN3eUoT8PtA0xFGHijk"
+    }
+  ],
+  "has_more": false,
+  "url": "/v1/balance_transactions"
+}

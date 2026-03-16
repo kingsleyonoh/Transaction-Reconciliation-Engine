@@ -1,0 +1,8 @@
+{
+  "error": {
+    "type": "rate_limit_error",
+    "code": "rate_limit",
+    "message": "Too many requests hit the API too quickly. We recommend an exponential backoff of your requests.",
+    "doc_url": "https://stripe.com/docs/error-codes/rate-limit"
+  }
+}

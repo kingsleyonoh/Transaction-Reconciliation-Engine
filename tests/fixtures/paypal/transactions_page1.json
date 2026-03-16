@@ -1,0 +1,99 @@
+{
+  "transaction_details": [
+    {
+      "transaction_info": {
+        "transaction_id": "5TY05013RG002845M",
+        "transaction_event_code": "T0006",
+        "transaction_initiation_date": "2026-03-01T10:15:00+0000",
+        "transaction_updated_date": "2026-03-01T10:15:30+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "150.00"
+        },
+        "fee_amount": {
+          "currency_code": "USD",
+          "value": "-4.65"
+        },
+        "transaction_status": "S",
+        "transaction_subject": "Invoice #1001 - Acme Corp",
+        "transaction_note": "Payment received for consulting services"
+      },
+      "payer_info": {
+        "account_id": "BUYER123ABC",
+        "email_address": "buyer@acme.example.com",
+        "payer_name": {
+          "given_name": "John",
+          "surname": "Smith"
+        }
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "8KH94682RD587301L",
+        "transaction_event_code": "T0007",
+        "transaction_initiation_date": "2026-03-02T14:30:00+0000",
+        "transaction_updated_date": "2026-03-02T14:30:15+0000",
+        "transaction_amount": {
+          "currency_code": "USD",
+          "value": "-75.50"
+        },
+        "fee_amount": {
+          "currency_code": "USD",
+          "value": "2.19"
+        },
+        "transaction_status": "S",
+        "transaction_subject": "Refund for Order #992",
+        "transaction_note": "Customer refund - damaged goods"
+      },
+      "payer_info": {
+        "account_id": "BUYER456DEF",
+        "email_address": "jane@beta.example.com",
+        "payer_name": {
+          "given_name": "Jane",
+          "surname": "Doe"
+        }
+      }
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "2WJ57391KP123456N",
+        "transaction_event_code": "T0006",
+        "transaction_initiation_date": "2026-03-03T09:00:00+0000",
+        "transaction_updated_date": "2026-03-03T09:00:45+0000",
+        "transaction_amount": {
+          "currency_code": "EUR",
+          "value": "2500.00"
+        },
+        "fee_amount": {
+          "currency_code": "EUR",
+          "value": "-72.75"
+        },
+        "transaction_status": "S",
+        "transaction_subject": "Enterprise license - Gamma GmbH",
+        "transaction_note": "Annual subscription payment"
+      },
+      "payer_info": {
+        "account_id": "BUYER789GHI",
+        "email_address": "finance@gamma.example.de",
+        "payer_name": {
+          "given_name": "Hans",
+          "surname": "Mueller"
+        }
+      }
+    }
+  ],
+  "account_number": "MERCHANT123ABC",
+  "start_date": "2026-03-01T00:00:00+0000",
+  "end_date": "2026-03-31T23:59:59+0000",
+  "last_refreshed_datetime": "2026-03-16T12:00:00+0000",
+  "page": 1,
+  "total_items": 3,
+  "total_pages": 1,
+  "links": [
+    {
+      "href": "https://api-m.sandbox.paypal.com/v1/reporting/transactions?start_date=2026-03-01T00:00:00-0000&end_date=2026-03-31T23:59:59-0000&page_size=500&page=1",
+      "rel": "self",
+      "method": "GET"
+    }
+  ]
+}

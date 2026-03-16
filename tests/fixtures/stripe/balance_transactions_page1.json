@@ -1,0 +1,49 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "txn_1OqR2uJ9aQkP4LpW",
+      "object": "balance_transaction",
+      "amount": 15000,
+      "currency": "usd",
+      "description": "Payment from Acme Corp",
+      "fee": 465,
+      "net": 14535,
+      "type": "charge",
+      "status": "available",
+      "created": 1709510400,
+      "available_on": 1709596800,
+      "source": "ch_3OqR2uJ9aQkP4LpW0xFGHijk"
+    },
+    {
+      "id": "txn_2PrS3vK0bRlQ5MqX",
+      "object": "balance_transaction",
+      "amount": -5000,
+      "currency": "usd",
+      "description": "Refund to Beta LLC",
+      "fee": -145,
+      "net": -4855,
+      "type": "refund",
+      "status": "available",
+      "created": 1709510500,
+      "available_on": 1709596900,
+      "source": "re_3PrS3vK0bRlQ5MqX0xFGHijk"
+    },
+    {
+      "id": "txn_3QsT4wL1cSmR6NrY",
+      "object": "balance_transaction",
+      "amount": 250000,
+      "currency": "usd",
+      "description": "Payment from Gamma Inc",
+      "fee": 7275,
+      "net": 242725,
+      "type": "charge",
+      "status": "available",
+      "created": 1709510600,
+      "available_on": 1709597000,
+      "source": "ch_4QsT4wL1cSmR6NrY0xFGHijk"
+    }
+  ],
+  "has_more": true,
+  "url": "/v1/balance_transactions"
+}
