@@ -30,15 +30,18 @@ transaction-reconciliation-engine/
 ├── internal/
 │   ├── adapter/                     # (planned) Source-specific adapters
 │   ├── api/                        # (planned) HTTP handlers
-│   ├── engine/                     # (planned) Core reconciliation logic
+│   ├── engine/                     # Transaction Ingester ✓
+│   │   ├── ingester.go             # Validate → dedup → insert pipeline
+│   │   └── ingester_test.go        # 11 integration tests
 │   ├── domain/                     # Domain types ✓
 │   │   ├── transaction.go          # Transaction + IngestRequest/Result
+│   │   ├── currency.go             # ISO 4217 validation
 │   │   ├── match.go                # Match entity
 │   │   ├── discrepancy.go          # Discrepancy entity
 │   │   ├── reconciliation.go       # ReconcileRequest/Result
 │   │   ├── source.go               # Source + IngestionLog entities
 │   │   └── report.go               # Report types
-│   ├── repository/                 # (planned) Database access
+│   ├── repository/                 # Database access ✓
 │   ├── scheduler/                  # (planned) Background job scheduling
 │   ├── report/                     # (planned) Report generation
 │   └── config/                     # Configuration ✓
@@ -51,8 +54,8 @@ transaction-reconciliation-engine/
 │   ├── paypal/
 │   └── bankfiles/
 ├── docs/
-│   ├── progress.md
-│   └── transaction-reconciliation-engine_prd.md
+│   ├── progress.md                  # Internal planning (gitignored)
+│   └── transaction-reconciliation-engine_prd.md  # PRD (gitignored)
 ├── .env                            # Local dev config (gitignored)
 ├── .env.example
 ├── Dockerfile
@@ -134,6 +137,7 @@ transaction-reconciliation-engine/
 - Money: Always BIGINT cents, never floats. CHAR(3) ISO 4217 currency codes.
 - Deduplication: `sha256(source_id + external_id)` stored in `dedup_key`, checked in Redis first then PostgreSQL.
 - Logging: zerolog JSON to stdout. Every operation includes request_id and source context.
+- **Gitignore policy**: `docs/progress.md`, PRD files, `.agent/workflows/`, and `.agent/guides/` are gitignored (proprietary/internal). NEVER force-add them to git.
 
 ## Shared Foundation (MUST READ before any implementation)
 
