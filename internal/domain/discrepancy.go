@@ -14,6 +14,7 @@ type Discrepancy struct {
 	ResolvedAt      *time.Time `db:"resolved_at" json:"resolved_at,omitempty"`
 	ResolvedBy      string     `db:"resolved_by" json:"resolved_by,omitempty"`
 	ResolutionNote  string     `db:"resolution_note" json:"resolution_note,omitempty"`
+	AgeDays         int        `db:"age_days" json:"age_days"`
 	RunID           string     `db:"run_id" json:"run_id"`
 	CreatedAt       time.Time  `db:"created_at" json:"created_at"`
 	UpdatedAt       time.Time  `db:"updated_at" json:"updated_at"`
