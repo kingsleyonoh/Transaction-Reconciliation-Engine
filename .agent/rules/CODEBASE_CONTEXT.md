@@ -1,6 +1,6 @@
 # Transaction Reconciliation Engine — Codebase Context
 
-> Last updated: 2026-03-14
+> Last updated: 2026-03-18
 > Template synced: 2026-03-14
 
 ## Tech Stack
@@ -28,12 +28,20 @@ transaction-reconciliation-engine/
 │   └── recon/
 │       └── main.go                  # Entry point (stub — wiring TODO)
 ├── internal/
-│   ├── adapter/                     # (planned) Source-specific adapters
+│   ├── adapter/                     # Source adapters (MT940, CAMT.053) ✓
+│   │   ├── adapter.go              # SourceAdapter interface
+│   │   ├── bankfile.go             # MT940 parser
+│   │   ├── bankfile_camt053.go     # CAMT.053 parser
+│   │   └── bankfile_test.go        # Bank file parser tests
 │   ├── api/                        # (planned) HTTP handlers
-│   ├── engine/                     # Transaction Ingester ✓
+│   ├── engine/                     # Ingester + Reconciler + DiscrepancyMgr ✓
 │   │   ├── ingester.go             # Validate → dedup → insert pipeline
-│   │   └── ingester_test.go        # 11 integration tests
-│   ├── domain/                     # Domain types ✓
+│   │   ├── reconciler.go           # 4-pass matching cascade
+│   │   ├── rules.go                # Match rule definitions (4 rules)
+│   │   ├── scorer.go               # Confidence scoring
+│   │   ├── discrepancy_manager.go  # Categorize, dedup, resolve, age
+│   │   └── *_test.go               # Unit + integration tests
+│   ├── domain/                     # Domain types ✓ (7 files)
 │   │   ├── transaction.go          # Transaction + IngestRequest/Result
 │   │   ├── currency.go             # ISO 4217 validation
 │   │   ├── match.go                # Match entity
@@ -73,8 +81,8 @@ transaction-reconciliation-engine/
 |--------|---------|-----------|
 | Domain | Pure types — no imports | `internal/domain/*.go` |
 | Repository | PostgreSQL CRUD with sqlx | `internal/repository/*.go` |
-| Engine | 4-pass matching cascade | `internal/engine/reconciler.go` |
-| Adapter | Source-specific transformers (Stripe, PayPal, bank files) | `internal/adapter/*.go` |
+| Engine | Ingester + Reconciler (4-pass cascade) + DiscrepancyMgr | → see Deep References |
+| Adapter | MT940/CAMT.053 bank file parsers, SourceAdapter interface | → see Deep References |
 | API | Chi HTTP handlers + middleware | `internal/api/*.go` |
 | Report | Settlement/discrepancy report generation (JSON + CSV) | `internal/report/*.go` |
 | Scheduler | Ticker-based background jobs | `internal/scheduler/scheduler.go` |
@@ -160,11 +168,14 @@ transaction-reconciliation-engine/
 |-------|--------------|
 | Reconciliation matching rules | `internal/engine/rules.go` |
 | Confidence scoring | `internal/engine/scorer.go` |
-| Stripe integration | `internal/adapter/stripe.go` |
-| PayPal integration | `internal/adapter/paypal.go` |
-| Bank file parsing | `internal/adapter/bankfile.go` |
-| Report generation | `internal/report/` |
-| Background jobs | `internal/scheduler/scheduler.go` |
+| Discrepancy manager | `internal/engine/discrepancy_manager.go` |
+| Reconciler (4-pass cascade) | `internal/engine/reconciler.go` |
+| Transaction ingester | `internal/engine/ingester.go` |
+| MT940 parser | `internal/adapter/bankfile.go` |
+| CAMT.053 parser | `internal/adapter/bankfile_camt053.go` |
+| Adapter interface | `internal/adapter/adapter.go` |
+| Stripe integration (planned) | `internal/adapter/stripe.go` |
+| PayPal integration (planned) | `internal/adapter/paypal.go` |
+| Report generation (planned) | `internal/report/` |
+| Background jobs (planned) | `internal/scheduler/scheduler.go` |
 | SQL migrations | `migrations/` |
-| Test patterns | `tests/` |
-| Test fixtures | `tests/fixtures/` |
