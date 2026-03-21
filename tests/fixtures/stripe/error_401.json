@@ -1,0 +1,8 @@
+{
+  "error": {
+    "type": "authentication_error",
+    "code": "api_key_expired",
+    "message": "Invalid API Key provided: sk_test_****xxxx",
+    "doc_url": "https://stripe.com/docs/error-codes/api-key-expired"
+  }
+}

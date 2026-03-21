@@ -1,5 +1,6 @@
 # AI Workflow System (proprietary — do not publish)
 .agent/workflows/
+.agent/guides/
 
 # Internal project planning
 docs/progress.md

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <BkToCstmrStmt>
+    <GrpHdr>
+      <MsgId>MSG-2026030100002</MsgId>
+      <CreDtTm>2026-03-01T12:00:00</CreDtTm>
+    </GrpHdr>
+    <Stmt>
+      <Id>STMT-MC-001</Id>
+      <ElctrncSeqNb>1</ElctrncSeqNb>
+      <CreDtTm>2026-03-01T12:00:00</CreDtTm>
+      <Acct>
+        <Id>
+          <IBAN>DE89370400440532013000</IBAN>
+        </Id>
+        <Ccy>EUR</Ccy>
+      </Acct>
+      <Bal>
+        <Tp><CdOrPrtry><Cd>OPBD</Cd></CdOrPrtry></Tp>
+        <Amt Ccy="EUR">10000.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt><Dt>2026-02-28</Dt></Dt>
+      </Bal>
+      <Bal>
+        <Tp><CdOrPrtry><Cd>CLBD</Cd></CdOrPrtry></Tp>
+        <Amt Ccy="EUR">12500.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt><Dt>2026-03-02</Dt></Dt>
+      </Bal>
+      <Ntry>
+        <Amt Ccy="EUR">1500.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt><Dt>2026-03-01</Dt></BookgDt>
+        <ValDt><Dt>2026-03-01</Dt></ValDt>
+        <AcctSvcrRef>MCREF001</AcctSvcrRef>
+        <NtryDtls>
+          <TxDtls>
+            <Refs><EndToEndId>EUR-PAY-001</EndToEndId></Refs>
+            <AmtDtls>
+              <InstdAmt>
+                <Amt Ccy="USD">1650.00</Amt>
+              </InstdAmt>
+            </AmtDtls>
+            <RmtInf><Ustrd>Payment in USD converted to EUR</Ustrd></RmtInf>
+            <RltdPties><Dbtr><Nm>US Client Inc</Nm></Dbtr></RltdPties>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="EUR">1000.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt><Dt>2026-03-02</Dt></BookgDt>
+        <ValDt><Dt>2026-03-02</Dt></ValDt>
+        <AcctSvcrRef>MCREF002</AcctSvcrRef>
+        <NtryDtls>
+          <TxDtls>
+            <Refs><EndToEndId>GBP-PAY-001</EndToEndId></Refs>
+            <AmtDtls>
+              <InstdAmt>
+                <Amt Ccy="GBP">860.00</Amt>
+              </InstdAmt>
+            </AmtDtls>
+            <RmtInf><Ustrd>Payment in GBP converted to EUR</Ustrd></RmtInf>
+            <RltdPties><Dbtr><Nm>UK Partner Ltd</Nm></Dbtr></RltdPties>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>

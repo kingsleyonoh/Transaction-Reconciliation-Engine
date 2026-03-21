@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <BkToCstmrStmt>
+    <GrpHdr>
+      <MsgId>MSG-2026030100001</MsgId>
+      <CreDtTm>2026-03-01T12:00:00</CreDtTm>
+    </GrpHdr>
+    <Stmt>
+      <Id>STMT-2026030100001</Id>
+      <ElctrncSeqNb>1</ElctrncSeqNb>
+      <CreDtTm>2026-03-01T12:00:00</CreDtTm>
+      <Acct>
+        <Id>
+          <IBAN>DE89370400440532013000</IBAN>
+        </Id>
+        <Ccy>EUR</Ccy>
+      </Acct>
+      <Bal>
+        <Tp>
+          <CdOrPrtry>
+            <Cd>OPBD</Cd>
+          </CdOrPrtry>
+        </Tp>
+        <Amt Ccy="EUR">5000.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt>
+          <Dt>2026-02-28</Dt>
+        </Dt>
+      </Bal>
+      <Bal>
+        <Tp>
+          <CdOrPrtry>
+            <Cd>CLBD</Cd>
+          </CdOrPrtry>
+        </Tp>
+        <Amt Ccy="EUR">7574.50</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt>
+          <Dt>2026-03-02</Dt>
+        </Dt>
+      </Bal>
+      <Ntry>
+        <Amt Ccy="EUR">150.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt>
+          <Dt>2026-03-01</Dt>
+        </BookgDt>
+        <ValDt>
+          <Dt>2026-03-01</Dt>
+        </ValDt>
+        <AcctSvcrRef>CAMTREF001</AcctSvcrRef>
+        <NtryDtls>
+          <TxDtls>
+            <Refs>
+              <EndToEndId>INV-1001</EndToEndId>
+            </Refs>
+            <RmtInf>
+              <Ustrd>Payment for Invoice 1001</Ustrd>
+            </RmtInf>
+            <RltdPties>
+              <Dbtr>
+                <Nm>Acme Corp</Nm>
+              </Dbtr>
+            </RltdPties>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="EUR">75.50</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt>
+          <Dt>2026-03-01</Dt>
+        </BookgDt>
+        <ValDt>
+          <Dt>2026-03-01</Dt>
+        </ValDt>
+        <AcctSvcrRef>CAMTREF002</AcctSvcrRef>
+        <NtryDtls>
+          <TxDtls>
+            <Refs>
+              <EndToEndId>PAY-SUPPLIER-42</EndToEndId>
+            </Refs>
+            <RmtInf>
+              <Ustrd>Supplier payment Beta Ltd</Ustrd>
+            </RmtInf>
+            <RltdPties>
+              <Cdtr>
+                <Nm>Beta Ltd</Nm>
+              </Cdtr>
+            </RltdPties>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="EUR">2500.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt>
+          <Dt>2026-03-02</Dt>
+        </BookgDt>
+        <ValDt>
+          <Dt>2026-03-02</Dt>
+        </ValDt>
+        <AcctSvcrRef>CAMTREF003</AcctSvcrRef>
+        <NtryDtls>
+          <TxDtls>
+            <Refs>
+              <EndToEndId>LIC-GAMMA-2026</EndToEndId>
+            </Refs>
+            <RmtInf>
+              <Ustrd>Enterprise license annual subscription</Ustrd>
+            </RmtInf>
+            <RltdPties>
+              <Dbtr>
+                <Nm>Gamma GmbH</Nm>
+              </Dbtr>
+            </RltdPties>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>

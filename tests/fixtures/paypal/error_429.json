@@ -1,0 +1,7 @@
+{
+  "name": "RATE_LIMIT_REACHED",
+  "message": "Too many requests. Retry after 30 seconds.",
+  "debug_id": "b6e3a4c1d8f94e2a",
+  "information_link": "https://developer.paypal.com/api/rest/responses/#errors",
+  "details": []
+}

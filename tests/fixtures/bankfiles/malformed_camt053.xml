@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02">
+  <BkToCstmrStmt>
+    <GrpHdr>
+      <MsgId>MSG-MALFORMED</MsgId>
+      <CreDtTm>2026-03-01T12:00:00</CreDtTm>
+    </GrpHdr>
+    <Stmt>
+      <Id>STMT-BAD-001</Id>
+      <Acct>
+        <Id>
+          <!-- Missing IBAN element -->
+        </Id>
+      </Acct>
+      <Ntry>
+        <Amt Ccy="EUR">100.00</Amt>
+        <!-- Missing CdtDbtInd - required field -->
+        <Sts>BOOK</Sts>
+        <BookgDt><Dt>INVALID-DATE</Dt></BookgDt>
+        <NtryDtls>
+          <TxDtls>
+            <Refs>
+              <!-- EndToEndId is empty -->
+              <EndToEndId></EndToEndId>
+            </Refs>
+          </TxDtls>
+        </NtryDtls>
+      </Ntry>
+      <!-- Unclosed element below makes XML structurally valid but semantically broken -->
+      <Ntry>
+        <Amt Ccy="">0.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+      </Ntry>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>

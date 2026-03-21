@@ -1,5 +1,7 @@
 # Transaction Reconciliation Engine — Coding Standards
 
+> Part 1 of 3. Also loaded: `CODING_STANDARDS_TESTING.md`, `CODING_STANDARDS_DOMAIN.md`
+
 These rules are ALWAYS ACTIVE. Follow them on every response without being asked.
 
 ## Workflow Pipeline Awareness
@@ -15,7 +17,7 @@ These rules are ALWAYS ACTIVE. Follow them on every response without being asked
 If your task touches any of the domains below, **also read the corresponding rules file before starting**.
 
 | When working on... | Also read |
-|--------------------|-----------|
+|--------------------|-----------| 
 | Authentication / API keys | `.agent/rules/auth_rules.md` (if exists) |
 | Database / migrations / queries | `.agent/rules/db_rules.md` (if exists) |
 | Background jobs / scheduling | `.agent/rules/jobs_rules.md` (if exists) |
@@ -74,17 +76,25 @@ You have a vast library of specialized skills available. **Use them proactively*
 1. **Before starting any implementation task**, mentally scan your available skills for matches.
 2. If a relevant skill exists, **read its SKILL.md first** using `view_file`, then follow its guidance.
 3. **Announce your choice**: *"I am invoking the [skill-name] skill to ensure this follows best practices."*
-4. When multiple skills could apply, invoke the most specific one.
+4. When multiple skills could apply, invoke the most specific one (e.g., `go-concurrency-patterns` over `clean-code` for a goroutine task).
 5. **When in doubt, invoke the skill.** Reading a SKILL.md costs 30 seconds. Getting it wrong costs hours.
 
 ### When to Invoke Skills (Non-Negotiable)
-- **Building with a specific framework/library** → find the matching skill
-- **Touching security** (auth, input validation, secrets) → invoke a security skill
+- **Building with Go patterns** → find the matching skill (`go-concurrency-patterns`, `clean-code`, etc.)
+- **Touching security** (auth, input validation, secrets, API exposure) → invoke a security skill
 - **Writing tests** → invoke the testing skill for your language/framework
 - **Designing a database schema or API** → invoke the design/architecture skill
 - **Debugging a bug** → invoke `systematic-debugging` before guessing
-- **Deploying or containerizing** → invoke the deployment skill
-- **Working with Go patterns** → check `go-concurrency-patterns`, `clean-code`
+- **Deploying or containerizing** → invoke the deployment skill for your platform
+- **Integrating an external API** → check for a dedicated skill first
+- **Working with AI/LLM features** → invoke the relevant AI skill (RAG, agents, prompts)
+- **Writing documentation** → invoke the documentation skill for the format you need
+- **Unfamiliar domain or new library** → research skill first, then build
+
+### What NOT to Do
+- ❌ Skip skills because "I already know this" — the skill may have guardrails you'd miss
+- ❌ Hardcode patterns from memory when a skill has the latest best practices
+- ❌ Use a generic approach when a project-specific skill exists
 
 ## Git Commit Convention
 
@@ -111,15 +121,10 @@ You have a vast library of specialized skills available. **Use them proactively*
 
 **Examples:**
 ```
-feat(domain): implement Transaction and IngestRequest structs
-feat(repository): add transaction CRUD with dedup handling
 feat(engine): implement 4-pass matching cascade
-feat(adapter): add Stripe balance transactions adapter
-feat(api): implement discrepancy CRUD endpoints
 fix(engine): handle refund sign reversal in matching
 test(engine): add reconciliation cascade integration tests
 chore(docker): create multi-stage Dockerfile
-docs(context): update CODEBASE_CONTEXT after adding scheduler
 ```
 
 ## AI Discipline Rules (Prevent Common AI Failures)
@@ -153,8 +158,9 @@ docs(context): update CODEBASE_CONTEXT after adding scheduler
 
 ### Full Read Rule (CRITICAL — Prevents Context Loss)
 - **When ANY workflow instructs you to "read" a file, you MUST read the ENTIRE file from first line to last line.**
-- If the file is longer than your read limit, make multiple sequential read calls until **every line has been read.**
-- This applies universally to: PRD, `progress.md`, `CODING_STANDARDS.md`, `CODEBASE_CONTEXT.md`, Shared Foundation files, and any other file a workflow tells you to read.
+- If the file is longer than your read limit, make multiple sequential read calls (e.g., lines 1–200, 201–400, 401–end) until **every line has been read.**
+- Do NOT read a partial subset and assume you understand the rest. Critical rules, patterns, and constraints are often buried later in the file.
+- This applies universally to: PRD, `progress.md`, `CODING_STANDARDS.md`, `CODEBASE_CONTEXT.md`, Shared Foundation files, source files referenced in tasks, and any other file a workflow tells you to read.
 
 ### Read Shared Foundation Before Coding (CRITICAL — Prevents Duplication)
 - Before writing ANY new utility, helper, middleware, handler, or shared pattern, read every file listed in the **Shared Foundation** table in `CODEBASE_CONTEXT.md`.
@@ -170,109 +176,26 @@ docs(context): update CODEBASE_CONTEXT after adding scheduler
   2. `find_by_name` for the file name
   3. Check relevant package exports
 - If it already exists, **USE IT**. Do not recreate it.
+- If a similar function exists, **extend it** — don't create a parallel version.
+- When in doubt, **ASK the user**: "I can't find X — does it exist, or should I create it?"
 
 ### Use Skills When Available (Skills > Pre-trained Knowledge)
 - Before implementing any task, scan your available skills list for domain matches.
-- **CRITICAL:** The patterns and rules defined in a `SKILL.md` STRICTLY OVERRIDE your general pre-trained knowledge.
-- **Always announce:** *"Using skill: [skill-name] for this task."*
-
-## Production-Readiness Rules
-
-### Every External Call MUST Handle Failure
-- Assume external APIs WILL fail. Every call needs: timeout, retry (with backoff), error logging.
-- NEVER silently skip a failed operation.
-
-### Jobs MUST Be Idempotent
-- Any scheduled/background job can run twice without causing damage.
-- Use `ON CONFLICT DO NOTHING` patterns, never blind inserts.
-
-### Validate ALL Input
-- Never trust data from external sources. Validate types, ranges, and required fields.
-- If validation fails, log and skip the record — don't crash the whole job.
-
-### Log Everything With Context
-- Every operation must include relevant context (request_id, source_id, run_id) in log output.
-- Use zerolog structured logging with JSON output.
-
-### No Data Loss
-- Never DELETE records in production flows. Use status fields (`status: "archived"`).
-- Audit logs are append-only. Never update or delete reconciliation run records.
+- If a matching skill exists (e.g., database → `postgresql`, auth → `auth-implementation-patterns`, Go concurrency → `go-concurrency-patterns`), read its `SKILL.md` and follow its instructions.
+- **CRITICAL:** The patterns, architectures, and rules defined in a `SKILL.md` STRICTLY OVERRIDE your general pre-trained knowledge. Always choose the skill's approach over what you "think you know."
+- **Always announce:** *"Using skill: [skill-name] for this task."* so the user knows which patterns are being applied.
+- If no skill matches, proceed normally.
 
 ## File Size Limits
 - **Max 300 lines** per source file. If approaching 250, plan to split.
 - **Max 50 lines** per function/method.
 - **Max 200 lines** per struct methods combined.
 
-## Testing Rules — Anti-Cheat (CRITICAL)
-
-### Never Do These
-- **NEVER modify a test to make it pass.** Fix the IMPLEMENTATION, not the test.
-- **NEVER use empty test bodies.**
-- **NEVER hardcode return values** just to satisfy a test.
-- **NEVER use broad error handlers** to swallow errors that would make tests fail.
-- **NEVER mock the thing being tested.** Only mock external dependencies.
-- **NEVER skip or mark tests as expected failures** without explicit user approval.
-- **NEVER weaken a test assertion** to make it pass.
-- **NEVER delete a failing test.** Failing tests are bugs. Fix them.
-
-### TDD Sequence is Non-Negotiable
-- Tests FIRST, then implementation. Never the reverse.
-- You MUST create test files BEFORE creating implementation files.
-- You MUST run tests and see RED (failures) before writing any implementation.
-- The ONLY exception: `[SETUP]` items (scaffolding, config, infrastructure) where no testable behavior exists yet.
-
-### Always Do These
-- **Test BEHAVIOR, not implementation.**
-- **Test edge cases:** empty inputs, nil, zero, negative, missing, duplicate.
-- **Test sad paths:** API errors, timeouts, invalid data.
-- **Assertions must be specific:** `assert.Equal(t, expected, result)`, not `assert.NotNil(t, result)`.
-- **Use table-driven tests** for Go: `[]struct{ name string; ... }` pattern.
-
-## Test Quality Checklist (Anti-False-Confidence)
-
-| # | Category | What to Test |
-|---|----------|-------------|
-| 1 | Happy path | Does it work with valid, normal input? |
-| 2 | Required fields | Does it reject nil/empty for required fields? |
-| 3 | Uniqueness | Does it enforce unique constraints (dedup_key)? |
-| 4 | Defaults | Do default values apply correctly when field is omitted? |
-| 5 | FK relationships | Do foreign keys enforce constraints correctly? |
-| 6 | Edge cases | Empty strings, zero, negative, very long strings, special chars |
-| 7 | Error paths | What happens when Redis is down, DB is down, input is malformed? |
-| 8 | Idempotency | Does re-running produce the same result? |
-
-## Test Modularity Rules
-1. **One test file per package** — `foo_test.go` in same package or `foo_integration_test.go` in `tests/`
-2. **Max 300 lines per test file** — split if larger
-3. **Test setup creates only what that test needs** — no global state
-4. **Tests are independent** — no shared state, no ordering dependency
-5. **Any single test can run in isolation** — `go test -run TestName ./internal/engine/`
-6. **Test names describe business behavior** — `TestReconciler_ExactMatchProducesConfidenceOne`
-
-## Live Integration Testing (Mock Policy)
-
-### The Rule: Don't Mock What You Own
-If you control the service and can run it locally → test against the real thing.
-
-### Test LIVE (Never Mock)
-- PostgreSQL database (local Docker) — validates schema, column names, constraints, query behavior
-- Redis (local Docker) — validates dedup keys, locks
-- Your own API endpoints — call the actual route via httptest
-- Your own reconciliation engine — test the real function
-
-### Mock ONLY These
-- Stripe API calls (use recorded fixtures in `tests/fixtures/stripe/`)
-- PayPal API calls (use recorded fixtures in `tests/fixtures/paypal/`)
-- Bank file content (use static files in `tests/fixtures/bankfiles/`)
-- Sentry error reporting
-
-### Test Cleanup
-- Each test MUST clean up after itself
-- Use database transactions with rollback when possible for speed
-
 ## PowerShell Environment
 - Use `;` to chain commands, **NEVER** `&&`
+- **NEVER use inline `go run -e "..."`** or complex one-liners for multi-step operations. Write a `.go` file or script instead.
 - Special characters that break PowerShell: `|`, `>`, `<`, `$`, `()`, `{}`
+- Write scripts to files instead of inline commands when possible.
 
 ## Git Branching Strategy
 
@@ -282,12 +205,3 @@ If you control the service and can run it locally → test against the real thin
 - `/implement-next` always runs on `dev`.
 - Tests always run against local dev services on `dev` branch.
 - Merge `dev` → `main` only when all tests pass and feature is complete.
-
-## Deployment Platform
-
-### Default: Railway
-- Deploy Docker container to Railway.
-- PostgreSQL 16 as Railway managed add-on.
-- Redis 7 as Railway managed add-on.
-- `git push` → Railway auto-deploys from `main` branch.
-- Migrations run automatically on startup via `golang-migrate` auto-migrate.

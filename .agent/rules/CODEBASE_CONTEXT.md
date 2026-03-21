@@ -1,19 +1,19 @@
 # Transaction Reconciliation Engine — Codebase Context
 
-> Last updated: 2026-03-14
+> Last updated: 2026-03-18
 > Template synced: 2026-03-14
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Language | Go 1.22 |
+| Language | Go 1.26.1 |
 | Framework | Chi router (go-chi/chi) |
 | Database | PostgreSQL 16 |
 | Cache | Redis 7 |
 | ORM | None — raw SQL with sqlx |
 | Migrations | golang-migrate/migrate |
-| Hosting | Docker on Railway |
+| Hosting | Docker on DigitalOcean VPS (Traefik) |
 | Test Runner | Go stdlib testing + testify |
 | Build Tool | Makefile + `go build` |
 | Logging | zerolog (JSON to stdout) |
@@ -26,55 +26,45 @@
 transaction-reconciliation-engine/
 ├── cmd/
 │   └── recon/
-│       └── main.go                  # Entry point, CLI + server setup
+│       └── main.go                  # Entry point (stub — wiring TODO)
 ├── internal/
-│   ├── adapter/                     # Source-specific adapters
-│   │   ├── stripe.go                # Stripe Balance Transactions adapter
-│   │   ├── paypal.go                # PayPal Transaction Search adapter
-│   │   ├── bankfile.go              # MT940/CAMT.053 parser adapter
-│   │   └── adapter.go              # SourceAdapter interface definition
-│   ├── api/                        # HTTP handlers
-│   │   ├── router.go               # Chi router setup + middleware
-│   │   ├── ingest_handler.go       # Transaction ingestion endpoints
-│   │   ├── reconcile_handler.go    # Reconciliation endpoints
-│   │   ├── discrepancy_handler.go  # Discrepancy CRUD endpoints
-│   │   ├── report_handler.go       # Report generation endpoints
-│   │   ├── upload_handler.go       # File upload endpoint
-│   │   ├── health_handler.go       # Health check endpoint
-│   │   └── middleware.go           # Auth, logging, rate limiting
-│   ├── engine/                     # Core reconciliation logic
-│   │   ├── reconciler.go           # Matching cascade engine
-│   │   ├── rules.go                # Match rule definitions
-│   │   └── scorer.go               # Confidence scoring
-│   ├── domain/                     # Domain types
-│   │   ├── transaction.go          # Transaction entity
+│   ├── adapter/                     # Source adapters (MT940, CAMT.053) ✓
+│   │   ├── adapter.go              # SourceAdapter interface
+│   │   ├── bankfile.go             # MT940 parser
+│   │   ├── bankfile_camt053.go     # CAMT.053 parser
+│   │   └── bankfile_test.go        # Bank file parser tests
+│   ├── api/                        # (planned) HTTP handlers
+│   ├── engine/                     # Ingester + Reconciler + DiscrepancyMgr ✓
+│   │   ├── ingester.go             # Validate → dedup → insert pipeline
+│   │   ├── reconciler.go           # 4-pass matching cascade
+│   │   ├── rules.go                # Match rule definitions (4 rules)
+│   │   ├── scorer.go               # Confidence scoring
+│   │   ├── discrepancy_manager.go  # Categorize, dedup, resolve, age
+│   │   └── *_test.go               # Unit + integration tests
+│   ├── domain/                     # Domain types ✓ (7 files)
+│   │   ├── transaction.go          # Transaction + IngestRequest/Result
+│   │   ├── currency.go             # ISO 4217 validation
 │   │   ├── match.go                # Match entity
 │   │   ├── discrepancy.go          # Discrepancy entity
 │   │   ├── reconciliation.go       # ReconcileRequest/Result
+│   │   ├── source.go               # Source + IngestionLog entities
 │   │   └── report.go               # Report types
-│   ├── repository/                 # Database access
-│   │   ├── transaction_repo.go     # Transaction CRUD
-│   │   ├── match_repo.go           # Match CRUD
-│   │   ├── discrepancy_repo.go     # Discrepancy CRUD
-│   │   ├── run_repo.go             # Reconciliation run CRUD
-│   │   └── db.go                   # Connection pool setup
-│   ├── scheduler/                  # Background job scheduling
-│   │   └── scheduler.go            # Ticker-based job runner
-│   ├── report/                     # Report generation
-│   │   ├── settlement.go           # Settlement report builder
-│   │   └── csv.go                  # CSV export
-│   └── config/                     # Configuration
+│   ├── repository/                 # Database access ✓
+│   ├── scheduler/                  # (planned) Background job scheduling
+│   ├── report/                     # (planned) Report generation
+│   └── config/                     # Configuration ✓
 │       └── config.go               # Env var loading + validation
-├── migrations/                     # SQL migration files
-├── tests/                          # Integration tests + fixtures
-│   ├── fixtures/
-│   │   ├── stripe/                 # Stripe API response recordings
-│   │   ├── paypal/                 # PayPal API response recordings
-│   │   └── bankfiles/              # Sample MT940/CAMT.053 files
-│   ├── reconciler_test.go
-│   ├── ingest_test.go
-│   └── api_test.go
+├── migrations/                     # SQL migration files ✓
+│   ├── 000001_create_tables.up.sql
+│   └── 000001_create_tables.down.sql
+├── tests/fixtures/                 # (planned) Integration tests + fixtures
+│   ├── stripe/
+│   ├── paypal/
+│   └── bankfiles/
 ├── docs/
+│   ├── progress.md                  # Internal planning (gitignored)
+│   └── transaction-reconciliation-engine_prd.md  # PRD (gitignored)
+├── .env                            # Local dev config (gitignored)
 ├── .env.example
 ├── Dockerfile
 ├── docker-compose.yml
@@ -83,14 +73,16 @@ transaction-reconciliation-engine/
 └── go.sum
 ```
 
+> ✓ = implemented, (planned) = directory exists but no source files yet
+
 ## Key Modules
 
 | Module | Purpose | Key Files |
 |--------|---------|-----------|
 | Domain | Pure types — no imports | `internal/domain/*.go` |
 | Repository | PostgreSQL CRUD with sqlx | `internal/repository/*.go` |
-| Engine | 4-pass matching cascade | `internal/engine/reconciler.go` |
-| Adapter | Source-specific transformers (Stripe, PayPal, bank files) | `internal/adapter/*.go` |
+| Engine | Ingester + Reconciler (4-pass cascade) + DiscrepancyMgr | → see Deep References |
+| Adapter | MT940/CAMT.053 bank file parsers, SourceAdapter interface | → see Deep References |
 | API | Chi HTTP handlers + middleware | `internal/api/*.go` |
 | Report | Settlement/discrepancy report generation (JSON + CSV) | `internal/report/*.go` |
 | Scheduler | Ticker-based background jobs | `internal/scheduler/scheduler.go` |
@@ -153,6 +145,7 @@ transaction-reconciliation-engine/
 - Money: Always BIGINT cents, never floats. CHAR(3) ISO 4217 currency codes.
 - Deduplication: `sha256(source_id + external_id)` stored in `dedup_key`, checked in Redis first then PostgreSQL.
 - Logging: zerolog JSON to stdout. Every operation includes request_id and source context.
+- **Gitignore policy**: `docs/progress.md`, PRD files, `.agent/workflows/`, and `.agent/guides/` are gitignored (proprietary/internal). NEVER force-add them to git.
 
 ## Shared Foundation (MUST READ before any implementation)
 
@@ -175,11 +168,14 @@ transaction-reconciliation-engine/
 |-------|--------------|
 | Reconciliation matching rules | `internal/engine/rules.go` |
 | Confidence scoring | `internal/engine/scorer.go` |
-| Stripe integration | `internal/adapter/stripe.go` |
-| PayPal integration | `internal/adapter/paypal.go` |
-| Bank file parsing | `internal/adapter/bankfile.go` |
-| Report generation | `internal/report/` |
-| Background jobs | `internal/scheduler/scheduler.go` |
+| Discrepancy manager | `internal/engine/discrepancy_manager.go` |
+| Reconciler (4-pass cascade) | `internal/engine/reconciler.go` |
+| Transaction ingester | `internal/engine/ingester.go` |
+| MT940 parser | `internal/adapter/bankfile.go` |
+| CAMT.053 parser | `internal/adapter/bankfile_camt053.go` |
+| Adapter interface | `internal/adapter/adapter.go` |
+| Stripe integration (planned) | `internal/adapter/stripe.go` |
+| PayPal integration (planned) | `internal/adapter/paypal.go` |
+| Report generation (planned) | `internal/report/` |
+| Background jobs (planned) | `internal/scheduler/scheduler.go` |
 | SQL migrations | `migrations/` |
-| Test patterns | `tests/` |
-| Test fixtures | `tests/fixtures/` |
