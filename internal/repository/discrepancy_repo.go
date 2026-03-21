@@ -25,6 +25,8 @@ type DiscrepancyRepository interface {
 	UpdateStatus(ctx context.Context, id, status, resolvedBy, resolutionNote string) error
 	FindByFilters(ctx context.Context, filters DiscrepancyFilters) ([]domain.Discrepancy, error)
 	FindByTransactionAndRun(ctx context.Context, transactionID, runID string) (*domain.Discrepancy, error)
+	FindByDateRange(ctx context.Context, from, to time.Time) ([]domain.Discrepancy, error)
+	CountOpenOlderThan(ctx context.Context, days int) (int, error)
 }
 
 type discrepancyRepo struct {
@@ -133,4 +135,26 @@ func (r *discrepancyRepo) FindByTransactionAndRun(ctx context.Context, transacti
 		return nil, err
 	}
 	return &d, nil
+}
+
+func (r *discrepancyRepo) FindByDateRange(ctx context.Context, from, to time.Time) ([]domain.Discrepancy, error) {
+	var discs []domain.Discrepancy
+	err := r.db.SelectContext(ctx, &discs,
+		"SELECT * FROM discrepancies WHERE created_at >= $1 AND created_at <= $2 ORDER BY created_at DESC",
+		from, to)
+	if err != nil {
+		return nil, fmt.Errorf("finding discrepancies by date range: %w", err)
+	}
+	return discs, nil
+}
+
+func (r *discrepancyRepo) CountOpenOlderThan(ctx context.Context, days int) (int, error) {
+	var count int
+	err := r.db.GetContext(ctx, &count,
+		"SELECT COUNT(*) FROM discrepancies WHERE status = 'open' AND created_at < NOW() - ($1 || ' days')::INTERVAL",
+		days)
+	if err != nil {
+		return 0, fmt.Errorf("counting old open discrepancies: %w", err)
+	}
+	return count, nil
 }

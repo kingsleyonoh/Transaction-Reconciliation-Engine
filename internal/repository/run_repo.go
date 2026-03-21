@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/domain"
@@ -14,6 +15,7 @@ type RunRepository interface {
 	Update(ctx context.Context, run *domain.ReconciliationRun) error
 	FindByID(ctx context.Context, id string) (*domain.ReconciliationRun, error)
 	List(ctx context.Context, limit, offset int) ([]domain.ReconciliationRun, error)
+	FindByDateRange(ctx context.Context, from, to time.Time) ([]domain.ReconciliationRun, error)
 }
 
 type runRepo struct {
@@ -90,6 +92,17 @@ func (r *runRepo) List(ctx context.Context, limit, offset int) ([]domain.Reconci
 		limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("listing reconciliation runs: %w", err)
+	}
+	return runs, nil
+}
+
+func (r *runRepo) FindByDateRange(ctx context.Context, from, to time.Time) ([]domain.ReconciliationRun, error) {
+	var runs []domain.ReconciliationRun
+	err := r.db.SelectContext(ctx, &runs,
+		"SELECT * FROM reconciliation_runs WHERE started_at >= $1 AND started_at <= $2 ORDER BY started_at DESC",
+		from, to)
+	if err != nil {
+		return nil, fmt.Errorf("finding runs by date range: %w", err)
 	}
 	return runs, nil
 }
