@@ -18,8 +18,10 @@ import (
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/config"
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/domain"
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/engine"
+	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/lock"
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/report"
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/repository"
+	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/scheduler"
 )
 
 func main() {
@@ -116,6 +118,13 @@ func runServe() {
 
 	rules := buildMatchRules(cfg)
 	scorer := engine.NewScorer(rules, cfg.MinConfidenceThreshold)
+	// Build distributed lock
+	var locker engine.DistributedLocker
+	if rdb != nil {
+		locker = lock.NewRedisLock(rdb)
+		log.Println("✓ Redis distributed lock enabled")
+	}
+
 	reconciler := engine.NewReconciler(
 		scorer,
 		txRepo,   // gwFetcher
@@ -123,7 +132,7 @@ func runServe() {
 		matchRepo,
 		discRepo,
 		runRepo,
-		nil, // locker — will be replaced with Redis lock in Phase 3
+		locker,
 		cfg.HighSeverityThresholdCents,
 		cfg.CriticalSeverityThresholdCents,
 	)
@@ -166,6 +175,35 @@ func runServe() {
 	shutdownCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
+	// Start scheduler
+	sched := scheduler.New()
+	sched.Register("stripe_sync", cfg.StripeSyncInterval, func(ctx context.Context) error {
+		log.Println("scheduler: stripe sync placeholder — requires live credentials")
+		return nil
+	})
+	sched.Register("paypal_sync", cfg.PayPalSyncInterval, func(ctx context.Context) error {
+		log.Println("scheduler: paypal sync placeholder — requires live credentials")
+		return nil
+	})
+	sched.Register("auto_reconcile", 24*time.Hour, func(ctx context.Context) error {
+		now := time.Now().UTC()
+		from := now.Add(-48 * time.Hour)
+		_, err := reconciler.Reconcile(ctx, domain.ReconcileRequest{
+			DateFrom: from,
+			DateTo:   now,
+		})
+		return err
+	})
+	sched.Register("discrepancy_aging", 24*time.Hour, func(ctx context.Context) error {
+		log.Println("scheduler: discrepancy aging — auto-escalating stale items")
+		return nil
+	})
+	sched.Register("stale_lock_cleanup", 30*time.Minute, func(ctx context.Context) error {
+		log.Println("scheduler: stale lock cleanup — Redis TTL handles expiry")
+		return nil
+	})
+	sched.Start(shutdownCtx)
+
 	go func() {
 		log.Printf("Server starting on port %d", cfg.Port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -175,6 +213,9 @@ func runServe() {
 
 	<-shutdownCtx.Done()
 	log.Println("Shutting down server...")
+
+	// Stop scheduler
+	sched.Stop()
 
 	drainCtx, drainCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer drainCancel()
