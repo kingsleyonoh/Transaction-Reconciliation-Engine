@@ -52,22 +52,6 @@ func TestRouter_AuthenticatedRoute_RejectsWithoutKey(t *testing.T) {
 	assert.Equal(t, CodeUnauthorized, envelope.Error.Code)
 }
 
-func TestRouter_AuthenticatedRoute_PlaceholderWithValidKey(t *testing.T) {
-	router := newTestRouter()
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/reconcile", nil)
-	req.Header.Set("X-API-Key", "test-key-123")
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-
-	// Placeholder returns 501 NOT_IMPLEMENTED.
-	assert.Equal(t, http.StatusNotImplemented, w.Code)
-
-	var envelope struct{ Error APIError }
-	err := json.NewDecoder(w.Body).Decode(&envelope)
-	assert.NoError(t, err)
-	assert.Equal(t, CodeNotImplemented, envelope.Error.Code)
-}
-
 func TestRouter_AllEndpointsRegistered(t *testing.T) {
 	router := newTestRouter()
 	apiKey := "test-key-123"
@@ -95,9 +79,15 @@ func TestRouter_AllEndpointsRegistered(t *testing.T) {
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 
-			// Should get 501 (placeholder), NOT 404 (route not found).
-			assert.Equal(t, http.StatusNotImplemented, w.Code,
-				"route %s %s should be registered", ep.method, ep.path)
+			// Should NOT get 404 (route not found) or 405 (method not allowed).
+			// Some handlers return 501 (placeholder) when deps are nil,
+			// others (like reports which always get a default ReportGenerator)
+			// return 400 for missing query params. Either is fine — we just
+			// want to prove the route is registered.
+			assert.NotEqual(t, http.StatusNotFound, w.Code,
+				"route %s %s should be registered (got 404)", ep.method, ep.path)
+			assert.NotEqual(t, http.StatusMethodNotAllowed, w.Code,
+				"route %s %s should be registered (got 405)", ep.method, ep.path)
 		})
 	}
 }
