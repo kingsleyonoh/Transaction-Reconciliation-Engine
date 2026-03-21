@@ -108,7 +108,11 @@ func (r *transactionRepo) FindByDedupKey(ctx context.Context, dedupKey string) (
 }
 
 func (r *transactionRepo) FindUnmatched(ctx context.Context, sourceID string, from, to time.Time) ([]domain.Transaction, error) {
-	query := `
+	var query string
+	var args []interface{}
+
+	if sourceID != "" {
+		query = `
 		SELECT t.* FROM transactions t
 		WHERE t.source_id = $1
 		  AND t.occurred_at >= $2
@@ -119,9 +123,23 @@ func (r *transactionRepo) FindUnmatched(ctx context.Context, sourceID string, fr
 			SELECT ledger_tx_id FROM matches
 		  )
 		ORDER BY t.occurred_at`
+		args = []interface{}{sourceID, from, to}
+	} else {
+		query = `
+		SELECT t.* FROM transactions t
+		WHERE t.occurred_at >= $1
+		  AND t.occurred_at <= $2
+		  AND t.id NOT IN (
+			SELECT gateway_tx_id FROM matches
+			UNION
+			SELECT ledger_tx_id FROM matches
+		  )
+		ORDER BY t.occurred_at`
+		args = []interface{}{from, to}
+	}
 
 	var txs []domain.Transaction
-	err := r.db.SelectContext(ctx, &txs, query, sourceID, from, to)
+	err := r.db.SelectContext(ctx, &txs, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("finding unmatched transactions: %w", err)
 	}

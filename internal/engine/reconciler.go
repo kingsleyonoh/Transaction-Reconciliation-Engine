@@ -96,29 +96,34 @@ func (r *Reconciler) Reconcile(ctx context.Context, req domain.ReconcileRequest)
 	// 2. Create run record
 	runID := uuid.New().String()
 	run := &domain.ReconciliationRun{
-		ID:        runID,
-		StartedAt: start,
-		Status:    domain.RunStatusRunning,
-		CreatedAt: start,
-		UpdatedAt: start,
+		ID:             runID,
+		StartedAt:      start,
+		Status:         domain.RunStatusRunning,
+		ConfigSnapshot: []byte("{}"),
+		CreatedAt:      start,
+		UpdatedAt:      start,
 	}
 	if err := r.runStore.Create(ctx, run); err != nil {
 		return domain.ReconcileResult{}, fmt.Errorf("failed to create run: %w", err)
 	}
 
 	// 3. Fetch unmatched transactions
-	sourceID := ""
-	if len(req.SourceIDs) > 0 {
-		sourceID = req.SourceIDs[0]
+	gwSourceID := ""
+	lgSourceID := ""
+	if len(req.SourceIDs) >= 1 {
+		gwSourceID = req.SourceIDs[0]
+	}
+	if len(req.SourceIDs) >= 2 {
+		lgSourceID = req.SourceIDs[1]
 	}
 
-	gwTxns, err := r.gwFetcher.FindUnmatched(ctx, sourceID, req.DateFrom, req.DateTo)
+	gwTxns, err := r.gwFetcher.FindUnmatched(ctx, gwSourceID, req.DateFrom, req.DateTo)
 	if err != nil {
 		r.failRun(ctx, run, err)
 		return domain.ReconcileResult{}, fmt.Errorf("failed to fetch gateway txns: %w", err)
 	}
 
-	lgTxns, err := r.lgFetcher.FindUnmatched(ctx, sourceID, req.DateFrom, req.DateTo)
+	lgTxns, err := r.lgFetcher.FindUnmatched(ctx, lgSourceID, req.DateFrom, req.DateTo)
 	if err != nil {
 		r.failRun(ctx, run, err)
 		return domain.ReconcileResult{}, fmt.Errorf("failed to fetch ledger txns: %w", err)

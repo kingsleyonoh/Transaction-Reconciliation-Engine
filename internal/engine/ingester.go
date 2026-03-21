@@ -77,6 +77,10 @@ func (ing *Ingester) Ingest(ctx context.Context, req domain.IngestRequest) (doma
 	}
 
 	// 5. Build transaction
+	rawData := req.RawData
+	if rawData == nil {
+		rawData = []byte("{}")
+	}
 	tx := domain.Transaction{
 		ID:           uuid.New().String(),
 		SourceID:     req.SourceID,
@@ -87,7 +91,7 @@ func (ing *Ingester) Ingest(ctx context.Context, req domain.IngestRequest) (doma
 		Description:  req.Description,
 		Counterparty: req.Counterparty,
 		OccurredAt:   req.OccurredAt,
-		RawData:      req.RawData,
+		RawData:      rawData,
 		DedupKey:     key,
 	}
 
