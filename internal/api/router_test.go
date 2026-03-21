@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,7 +15,7 @@ func newTestRouter() http.Handler {
 		DB:     nil, // nil is handled gracefully by healthHandler
 		Redis:  nil,
 		APIKey: "test-key-123",
-		Logger: nil, // uses slog.Default()
+		Logger: zerolog.Nop(), // silent logger for tests
 	})
 }
 

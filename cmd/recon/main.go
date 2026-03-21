@@ -19,6 +19,7 @@ import (
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/domain"
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/engine"
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/lock"
+	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/observability"
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/report"
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/repository"
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/scheduler"
@@ -72,17 +73,28 @@ func runServe() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
+	// Initialize structured logger
+	logger := observability.NewLogger(cfg.LogLevel, nil)
+
+	// Initialize Sentry (no-op if DSN empty)
+	if err := observability.InitSentry(cfg.SentryDSN); err != nil {
+		logger.Warn().Err(err).Msg("sentry initialization failed")
+	} else if cfg.SentryDSN != "" {
+		logger.Info().Msg("✓ Sentry initialized")
+	}
+	defer observability.Flush()
+
 	// Connect database
 	db, err := repository.NewPostgresPool(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
+		logger.Fatal().Err(err).Msg("failed to connect to database")
 	}
 	defer db.Close()
 
 	// Connect Redis
 	rdb, err := repository.NewRedisClient(cfg.RedisURL)
 	if err != nil {
-		log.Printf("WARNING: Redis unavailable: %v (continuing without cache)", err)
+		logger.Warn().Err(err).Msg("redis unavailable, continuing without cache")
 		rdb = nil
 	}
 	if rdb != nil {
@@ -93,16 +105,16 @@ func runServe() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := db.PingContext(ctx); err != nil {
-		log.Fatalf("database health check failed: %v", err)
+		logger.Fatal().Err(err).Msg("database health check failed")
 	}
-	log.Println("✓ Database connected")
+	logger.Info().Msg("✓ Database connected")
 
 	if rdb != nil {
 		if err := rdb.Ping(ctx).Err(); err != nil {
-			log.Printf("WARNING: Redis health check failed: %v", err)
+			logger.Warn().Err(err).Msg("redis health check failed")
 			rdb = nil
 		} else {
-			log.Println("✓ Redis connected")
+			logger.Info().Msg("✓ Redis connected")
 		}
 	}
 
@@ -114,7 +126,7 @@ func runServe() {
 	_ = repository.NewSourceRepo(db)
 
 	// Build services
-	ingester := engine.NewIngester(txRepo, rdb)
+	ingester := engine.NewIngester(txRepo, rdb, logger)
 
 	rules := buildMatchRules(cfg)
 	scorer := engine.NewScorer(rules, cfg.MinConfidenceThreshold)
@@ -122,7 +134,7 @@ func runServe() {
 	var locker engine.DistributedLocker
 	if rdb != nil {
 		locker = lock.NewRedisLock(rdb)
-		log.Println("✓ Redis distributed lock enabled")
+		logger.Info().Msg("✓ Redis distributed lock enabled")
 	}
 
 	reconciler := engine.NewReconciler(
@@ -152,6 +164,7 @@ func runServe() {
 		DB:        db,
 		Redis:     rdb,
 		APIKey:    cfg.APIKey,
+		Logger:    logger,
 		Ingester:  ingester,
 		Adapters:  adapters,
 		Runner:    reconciler,
@@ -176,13 +189,13 @@ func runServe() {
 	defer stop()
 
 	// Start scheduler
-	sched := scheduler.New()
+	sched := scheduler.New(logger)
 	sched.Register("stripe_sync", cfg.StripeSyncInterval, func(ctx context.Context) error {
-		log.Println("scheduler: stripe sync placeholder — requires live credentials")
+		logger.Info().Msg("scheduler: stripe sync placeholder — requires live credentials")
 		return nil
 	})
 	sched.Register("paypal_sync", cfg.PayPalSyncInterval, func(ctx context.Context) error {
-		log.Println("scheduler: paypal sync placeholder — requires live credentials")
+		logger.Info().Msg("scheduler: paypal sync placeholder — requires live credentials")
 		return nil
 	})
 	sched.Register("auto_reconcile", 24*time.Hour, func(ctx context.Context) error {
@@ -195,24 +208,24 @@ func runServe() {
 		return err
 	})
 	sched.Register("discrepancy_aging", 24*time.Hour, func(ctx context.Context) error {
-		log.Println("scheduler: discrepancy aging — auto-escalating stale items")
+		logger.Info().Msg("scheduler: discrepancy aging — auto-escalating stale items")
 		return nil
 	})
 	sched.Register("stale_lock_cleanup", 30*time.Minute, func(ctx context.Context) error {
-		log.Println("scheduler: stale lock cleanup — Redis TTL handles expiry")
+		logger.Info().Msg("scheduler: stale lock cleanup — Redis TTL handles expiry")
 		return nil
 	})
 	sched.Start(shutdownCtx)
 
 	go func() {
-		log.Printf("Server starting on port %d", cfg.Port)
+		logger.Info().Int("port", cfg.Port).Msg("server starting")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("server error: %v", err)
+			logger.Fatal().Err(err).Msg("server error")
 		}
 	}()
 
 	<-shutdownCtx.Done()
-	log.Println("Shutting down server...")
+	logger.Info().Msg("shutting down server...")
 
 	// Stop scheduler
 	sched.Stop()
@@ -220,9 +233,9 @@ func runServe() {
 	drainCtx, drainCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer drainCancel()
 	if err := srv.Shutdown(drainCtx); err != nil {
-		log.Fatalf("server shutdown error: %v", err)
+		logger.Fatal().Err(err).Msg("server shutdown error")
 	}
-	log.Println("Server stopped gracefully")
+	logger.Info().Msg("server stopped gracefully")
 }
 
 // ---------------------------------------------------------------------------
@@ -275,8 +288,10 @@ func runUpload() {
 	}
 	defer db.Close()
 
+	logger := observability.NewLogger(cfg.LogLevel, nil)
+
 	txRepo := repository.NewTransactionRepo(db)
-	ingester := engine.NewIngester(txRepo, nil)
+	ingester := engine.NewIngester(txRepo, nil, logger)
 
 	// Read entire file
 	file, err := os.Open(filePath)

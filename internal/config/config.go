@@ -42,6 +42,9 @@ type Config struct {
 	// Discrepancy
 	HighSeverityThresholdCents     int64
 	CriticalSeverityThresholdCents int64
+
+	// Observability (optional)
+	SentryDSN string
 }
 
 // Load reads configuration from environment variables with validation.
@@ -71,6 +74,8 @@ func Load() (*Config, error) {
 
 		HighSeverityThresholdCents:     int64(getEnvInt("HIGH_SEVERITY_THRESHOLD_CENTS", 10000)),
 		CriticalSeverityThresholdCents: int64(getEnvInt("CRITICAL_SEVERITY_THRESHOLD_CENTS", 100000)),
+
+		SentryDSN: os.Getenv("SENTRY_DSN"),
 	}
 
 	if err := cfg.validate(); err != nil {

@@ -5,11 +5,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog"
 
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/domain"
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/repository"
@@ -20,15 +20,17 @@ const redisDedupTTL = 24 * time.Hour
 
 // Ingester handles normalizing and storing transactions from any source.
 type Ingester struct {
-	repo  repository.TransactionRepository
-	redis *redis.Client // nil = Redis unavailable, fall back to PostgreSQL only
+	repo   repository.TransactionRepository
+	redis  *redis.Client // nil = Redis unavailable, fall back to PostgreSQL only
+	logger zerolog.Logger
 }
 
 // NewIngester creates a new Ingester. The redis client may be nil.
-func NewIngester(repo repository.TransactionRepository, redisClient *redis.Client) *Ingester {
+func NewIngester(repo repository.TransactionRepository, redisClient *redis.Client, logger zerolog.Logger) *Ingester {
 	return &Ingester{
-		repo:  repo,
-		redis: redisClient,
+		repo:   repo,
+		redis:  redisClient,
+		logger: logger,
 	}
 }
 
@@ -52,7 +54,7 @@ func (ing *Ingester) Ingest(ctx context.Context, req domain.IngestRequest) (doma
 			}, nil
 		}
 		if err != nil && err != redis.Nil {
-			log.Printf("WARN: redis GET dedup:%s failed: %v (falling through to PostgreSQL)", key, err)
+			ing.logger.Warn().Str("key", key).Err(err).Msg("redis GET dedup failed, falling through to PostgreSQL")
 		}
 	}
 
@@ -65,7 +67,7 @@ func (ing *Ingester) Ingest(ctx context.Context, req domain.IngestRequest) (doma
 		// Re-populate Redis cache if available
 		if ing.redis != nil {
 			if err := ing.redis.Set(ctx, "dedup:"+key, existing.ID, redisDedupTTL).Err(); err != nil {
-				log.Printf("WARN: redis SET dedup:%s failed: %v", key, err)
+				ing.logger.Warn().Str("key", key).Err(err).Msg("redis SET dedup failed")
 			}
 		}
 		return domain.IngestResult{
@@ -106,7 +108,7 @@ func (ing *Ingester) Ingest(ctx context.Context, req domain.IngestRequest) (doma
 	// 7. Cache dedup key in Redis
 	if ing.redis != nil {
 		if err := ing.redis.Set(ctx, "dedup:"+key, tx.ID, redisDedupTTL).Err(); err != nil {
-			log.Printf("WARN: redis SET dedup:%s failed: %v", key, err)
+			ing.logger.Warn().Str("key", key).Err(err).Msg("redis SET dedup failed")
 		}
 	}
 

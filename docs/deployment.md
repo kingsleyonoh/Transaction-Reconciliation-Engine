@@ -78,8 +78,46 @@ git pull origin dev
 docker compose up -d --build
 ```
 
-## 7. Monitoring
+## 7. Monitoring & Observability
 
-- **Health endpoint:** `GET /health` — returns service status
-- **Docker logs:** `docker compose logs -f app`
-- **Container stats:** `docker stats recon-engine`
+### Health Endpoint
+
+```bash
+curl -sf http://YOUR_DOMAIN/health | jq .
+# → { "status": "healthy", "postgres": "ok", "redis": "ok" }
+```
+
+### Structured Logging (zerolog)
+
+Logs are emitted as JSON to stdout. Docker Compose captures them:
+
+```bash
+docker compose logs -f app
+# Each line is valid JSON: {"level":"info","time":"...","method":"GET","path":"/health",...}
+```
+
+Set `LOG_LEVEL` in `.env` to control verbosity: `debug`, `info` (default), `warn`, `error`.
+
+### Sentry Error Tracking
+
+1. Create a project at [sentry.io](https://sentry.io) (free tier).
+2. Copy the DSN and set `SENTRY_DSN` in `.env`.
+3. Restart the container — Sentry captures unhandled errors and panics.
+
+### BetterStack Uptime Monitoring
+
+1. Sign up at [betterstack.com](https://betterstack.com) (free tier: 10 monitors, 3-min interval).
+2. Create a **HTTP(S) Monitor**:
+   - **URL:** `https://YOUR_DOMAIN/health`
+   - **Check interval:** 180s (3 min)
+   - **Expected status:** 200
+   - **Keyword check:** `healthy`
+3. Configure alert channels (email, Slack, webhook).
+4. Set `BETTERSTACK_URL` in `.env` for reference (not consumed by the app).
+
+### Container Metrics
+
+```bash
+docker stats recon-engine
+```
+

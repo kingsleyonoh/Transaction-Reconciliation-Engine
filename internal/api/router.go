@@ -1,15 +1,16 @@
 package api
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog"
 
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/adapter"
+	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/observability"
 )
 
 // Deps holds the dependencies required by the router and its handlers.
@@ -17,7 +18,7 @@ type Deps struct {
 	DB       *sqlx.DB
 	Redis    *redis.Client
 	APIKey   string
-	Logger   *slog.Logger
+	Logger   zerolog.Logger
 	Ingester TransactionIngester
 	Adapters map[string]adapter.SourceAdapter
 	Runner   ReconcileRunner
@@ -33,13 +34,10 @@ func NewRouter(deps Deps) chi.Router {
 	r := chi.NewRouter()
 
 	logger := deps.Logger
-	if logger == nil {
-		logger = slog.Default()
-	}
 
 	// --- Global middleware (applied to every request) ---
 	r.Use(RequestID)
-	r.Use(RequestLogger(logger))
+	r.Use(observability.RequestLoggerMiddleware(logger))
 	r.Use(middleware.Recoverer)
 
 	// --- Public routes (no auth) ---

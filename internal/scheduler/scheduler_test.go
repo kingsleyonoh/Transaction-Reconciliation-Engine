@@ -6,13 +6,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestScheduler_JobExecutes(t *testing.T) {
 	var count int64
 
-	s := New()
+	s := New(zerolog.Nop())
 	s.Register("test_job", 50*time.Millisecond, func(ctx context.Context) error {
 		atomic.AddInt64(&count, 1)
 		return nil
@@ -33,7 +34,7 @@ func TestScheduler_JobExecutes(t *testing.T) {
 func TestScheduler_ContextCancellation(t *testing.T) {
 	var count int64
 
-	s := New()
+	s := New(zerolog.Nop())
 	s.Register("cancel_job", 20*time.Millisecond, func(ctx context.Context) error {
 		atomic.AddInt64(&count, 1)
 		return nil
@@ -59,7 +60,7 @@ func TestScheduler_ContextCancellation(t *testing.T) {
 func TestScheduler_MultipleJobs(t *testing.T) {
 	var countA, countB int64
 
-	s := New()
+	s := New(zerolog.Nop())
 	s.Register("job_a", 40*time.Millisecond, func(ctx context.Context) error {
 		atomic.AddInt64(&countA, 1)
 		return nil
@@ -84,7 +85,7 @@ func TestScheduler_ErrorHandling(t *testing.T) {
 	// Verify that a failing job does not crash the scheduler
 	var count int64
 
-	s := New()
+	s := New(zerolog.Nop())
 	s.Register("error_job", 30*time.Millisecond, func(ctx context.Context) error {
 		atomic.AddInt64(&count, 1)
 		return assert.AnError

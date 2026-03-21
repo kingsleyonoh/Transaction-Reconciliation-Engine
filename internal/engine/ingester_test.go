@@ -12,6 +12,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog"
 
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/domain"
 	"github.com/kingsleyonoh/transaction-reconciliation-engine/internal/repository"
@@ -114,7 +115,7 @@ func TestIngester_HappyPath_CreatesTransaction(t *testing.T) {
 	db := setupTestDB(t)
 	rc := setupTestRedis(t)
 	repo := repository.NewTransactionRepo(db)
-	ingester := NewIngester(repo, rc)
+	ingester := NewIngester(repo, rc, zerolog.Nop())
 
 	req := validRequest()
 	result, err := ingester.Ingest(context.Background(), req)
@@ -146,7 +147,7 @@ func TestIngester_Duplicate_RedisHit(t *testing.T) {
 	db := setupTestDB(t)
 	rc := setupTestRedis(t)
 	repo := repository.NewTransactionRepo(db)
-	ingester := NewIngester(repo, rc)
+	ingester := NewIngester(repo, rc, zerolog.Nop())
 
 	req := validRequest()
 
@@ -176,7 +177,7 @@ func TestIngester_Duplicate_PostgresFallback(t *testing.T) {
 	db := setupTestDB(t)
 	rc := setupTestRedis(t)
 	repo := repository.NewTransactionRepo(db)
-	ingester := NewIngester(repo, rc)
+	ingester := NewIngester(repo, rc, zerolog.Nop())
 
 	req := validRequest()
 
@@ -213,7 +214,7 @@ func TestIngester_InvalidCurrency_RejectsWithError(t *testing.T) {
 	db := setupTestDB(t)
 	rc := setupTestRedis(t)
 	repo := repository.NewTransactionRepo(db)
-	ingester := NewIngester(repo, rc)
+	ingester := NewIngester(repo, rc, zerolog.Nop())
 
 	req := validRequest()
 	req.Currency = "ZZZ"
@@ -228,7 +229,7 @@ func TestIngester_FutureDate_RejectsWithError(t *testing.T) {
 	db := setupTestDB(t)
 	rc := setupTestRedis(t)
 	repo := repository.NewTransactionRepo(db)
-	ingester := NewIngester(repo, rc)
+	ingester := NewIngester(repo, rc, zerolog.Nop())
 
 	req := validRequest()
 	req.OccurredAt = time.Now().Add(24 * time.Hour) // tomorrow
@@ -243,7 +244,7 @@ func TestIngester_EmptySourceID_RejectsWithError(t *testing.T) {
 	db := setupTestDB(t)
 	rc := setupTestRedis(t)
 	repo := repository.NewTransactionRepo(db)
-	ingester := NewIngester(repo, rc)
+	ingester := NewIngester(repo, rc, zerolog.Nop())
 
 	req := validRequest()
 	req.SourceID = ""
@@ -258,7 +259,7 @@ func TestIngester_EmptyExternalID_RejectsWithError(t *testing.T) {
 	db := setupTestDB(t)
 	rc := setupTestRedis(t)
 	repo := repository.NewTransactionRepo(db)
-	ingester := NewIngester(repo, rc)
+	ingester := NewIngester(repo, rc, zerolog.Nop())
 
 	req := validRequest()
 	req.ExternalID = ""
@@ -273,7 +274,7 @@ func TestIngester_InvalidDirection_RejectsWithError(t *testing.T) {
 	db := setupTestDB(t)
 	rc := setupTestRedis(t)
 	repo := repository.NewTransactionRepo(db)
-	ingester := NewIngester(repo, rc)
+	ingester := NewIngester(repo, rc, zerolog.Nop())
 
 	req := validRequest()
 	req.Direction = "refund"
@@ -288,7 +289,7 @@ func TestIngester_ZeroAmount_Accepted(t *testing.T) {
 	db := setupTestDB(t)
 	rc := setupTestRedis(t)
 	repo := repository.NewTransactionRepo(db)
-	ingester := NewIngester(repo, rc)
+	ingester := NewIngester(repo, rc, zerolog.Nop())
 
 	req := validRequest()
 	req.Amount = 0
@@ -305,7 +306,7 @@ func TestIngester_ZeroAmount_Accepted(t *testing.T) {
 func TestIngester_RedisUnavailable_FallsBackToPostgres(t *testing.T) {
 	db := setupTestDB(t)
 	repo := repository.NewTransactionRepo(db)
-	ingester := NewIngester(repo, nil) // nil Redis client
+	ingester := NewIngester(repo, nil, zerolog.Nop()) // nil Redis client
 
 	req := validRequest()
 	result, err := ingester.Ingest(context.Background(), req)
