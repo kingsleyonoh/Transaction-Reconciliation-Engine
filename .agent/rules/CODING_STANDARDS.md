@@ -69,16 +69,32 @@ cmd/recon  → api, scheduler, config
 - Error format: `{ "error": { "code": "...", "message": "...", "details": [...] } }`.
 - Standard error codes: `VALIDATION_ERROR`, `NOT_FOUND`, `DUPLICATE`, `UNAUTHORIZED`, `RATE_LIMITED`, `INTERNAL_ERROR`, `RECONCILIATION_LOCKED`.
 
-## Skill Selection
-You have specialized skills available. **Use them proactively** — don't wing it when a skill exists.
+## Skill Selection & Orchestration
+You have a vast library of specialized skills available. **Use them proactively** — don't wing it when a skill exists for the task.
 
-1. Before any implementation task, scan available skills for matches.
-2. If a relevant skill exists, **read its SKILL.md first**, then follow its guidance.
-3. **Announce:** *"Using skill: [skill-name] for this task."*
-4. When multiple skills apply, invoke the most specific one.
-5. **When in doubt, invoke the skill.** Reading costs seconds; getting it wrong costs hours.
+### How Skill Selection Works
+1. **Before starting any implementation task**, mentally scan your available skills for matches.
+2. If a relevant skill exists, **read its SKILL.md first** using `view_file`, then follow its guidance.
+3. **Announce your choice**: *"I am invoking the [skill-name] skill to ensure this follows best practices."*
+4. When multiple skills could apply, invoke the most specific one (e.g., `go-concurrency-patterns` over `clean-code` for a goroutine task).
+5. **When in doubt, invoke the skill.** Reading a SKILL.md costs 30 seconds. Getting it wrong costs hours.
 
-**Non-negotiable triggers:** framework/library work, security, tests, DB/API design, debugging (`systematic-debugging`), deployment, external API integration, AI/LLM features, documentation, Go patterns (`go-concurrency-patterns`, `clean-code`).
+### When to Invoke Skills (Non-Negotiable)
+- **Building with Go patterns** → find the matching skill (`go-concurrency-patterns`, `clean-code`, etc.)
+- **Touching security** (auth, input validation, secrets, API exposure) → invoke a security skill
+- **Writing tests** → invoke the testing skill for your language/framework
+- **Designing a database schema or API** → invoke the design/architecture skill
+- **Debugging a bug** → invoke `systematic-debugging` before guessing
+- **Deploying or containerizing** → invoke the deployment skill for your platform
+- **Integrating an external API** → check for a dedicated skill first
+- **Working with AI/LLM features** → invoke the relevant AI skill (RAG, agents, prompts)
+- **Writing documentation** → invoke the documentation skill for the format you need
+- **Unfamiliar domain or new library** → research skill first, then build
+
+### What NOT to Do
+- ❌ Skip skills because "I already know this" — the skill may have guardrails you'd miss
+- ❌ Hardcode patterns from memory when a skill has the latest best practices
+- ❌ Use a generic approach when a project-specific skill exists
 
 ## Git Commit Convention
 
@@ -142,8 +158,9 @@ chore(docker): create multi-stage Dockerfile
 
 ### Full Read Rule (CRITICAL — Prevents Context Loss)
 - **When ANY workflow instructs you to "read" a file, you MUST read the ENTIRE file from first line to last line.**
-- If the file is longer than your read limit, make multiple sequential read calls until **every line has been read.**
-- This applies universally to: PRD, `progress.md`, `CODING_STANDARDS.md`, `CODEBASE_CONTEXT.md`, Shared Foundation files, and any other file a workflow tells you to read.
+- If the file is longer than your read limit, make multiple sequential read calls (e.g., lines 1–200, 201–400, 401–end) until **every line has been read.**
+- Do NOT read a partial subset and assume you understand the rest. Critical rules, patterns, and constraints are often buried later in the file.
+- This applies universally to: PRD, `progress.md`, `CODING_STANDARDS.md`, `CODEBASE_CONTEXT.md`, Shared Foundation files, source files referenced in tasks, and any other file a workflow tells you to read.
 
 ### Read Shared Foundation Before Coding (CRITICAL — Prevents Duplication)
 - Before writing ANY new utility, helper, middleware, handler, or shared pattern, read every file listed in the **Shared Foundation** table in `CODEBASE_CONTEXT.md`.
@@ -159,11 +176,15 @@ chore(docker): create multi-stage Dockerfile
   2. `find_by_name` for the file name
   3. Check relevant package exports
 - If it already exists, **USE IT**. Do not recreate it.
+- If a similar function exists, **extend it** — don't create a parallel version.
+- When in doubt, **ASK the user**: "I can't find X — does it exist, or should I create it?"
 
 ### Use Skills When Available (Skills > Pre-trained Knowledge)
 - Before implementing any task, scan your available skills list for domain matches.
-- **CRITICAL:** The patterns and rules defined in a `SKILL.md` STRICTLY OVERRIDE your general pre-trained knowledge.
-- **Always announce:** *"Using skill: [skill-name] for this task."*
+- If a matching skill exists (e.g., database → `postgresql`, auth → `auth-implementation-patterns`, Go concurrency → `go-concurrency-patterns`), read its `SKILL.md` and follow its instructions.
+- **CRITICAL:** The patterns, architectures, and rules defined in a `SKILL.md` STRICTLY OVERRIDE your general pre-trained knowledge. Always choose the skill's approach over what you "think you know."
+- **Always announce:** *"Using skill: [skill-name] for this task."* so the user knows which patterns are being applied.
+- If no skill matches, proceed normally.
 
 ## File Size Limits
 - **Max 300 lines** per source file. If approaching 250, plan to split.
@@ -172,7 +193,9 @@ chore(docker): create multi-stage Dockerfile
 
 ## PowerShell Environment
 - Use `;` to chain commands, **NEVER** `&&`
+- **NEVER use inline `go run -e "..."`** or complex one-liners for multi-step operations. Write a `.go` file or script instead.
 - Special characters that break PowerShell: `|`, `>`, `<`, `$`, `()`, `{}`
+- Write scripts to files instead of inline commands when possible.
 
 ## Git Branching Strategy
 

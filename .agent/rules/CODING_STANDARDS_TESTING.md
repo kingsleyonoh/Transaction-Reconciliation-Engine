@@ -48,6 +48,11 @@ Before moving from RED → GREEN, verify ALL applicable categories have tests:
 
 **If a category applies and you skip it, you're cheating.** If RED phase shows fewer than 2 failures, add more tests — you're probably not testing enough.
 
+### Performance Awareness
+- Correctness tests alone don't catch latency regressions — an endpoint can pass all tests while making 10× the necessary DB queries
+- When a single endpoint triggers 3+ backend operations, consider asserting call count or response time
+- After every batch of 5+ features, do a compound load check: call real endpoints and verify total I/O matches expectations
+
 ## Edge Case Coverage Guide
 
 ### Models
