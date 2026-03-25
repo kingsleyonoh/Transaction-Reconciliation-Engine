@@ -2,6 +2,12 @@
 
 Built by [Kingsley Onoh](https://kingsleyonoh.com) · Systems Architect
 
+
+> **Live Demo:** [https://recon-engine.kingsleyonoh.com](https://recon-engine.kingsleyonoh.com)
+>
+> This is a live demo with usage limits. For full access or a custom build, [get in touch](https://kingsleyonoh.com).
+
+
 ## The Problem
 
 Any company processing payments through Stripe, PayPal, or bank transfers deals with the same headache: money moves through multiple systems, and the records never quite match. A refund shows up in the gateway but not the bank. A payment arrives three days late with a different reference number. A fee gets deducted that nobody expected. Finance teams spend hours in Excel every week reconciling these discrepancies — and for regulated businesses, auditors demand proof that every cent is accounted for. At scale (10,000+ transactions/day), manual reconciliation breaks down entirely.
@@ -219,10 +225,6 @@ The production stack runs on a DigitalOcean VPS behind Traefik v3.6 with automat
 ```
 
 ---
-
-> **Live Demo:** [https://recon-engine.kingsleyonoh.com](https://recon-engine.kingsleyonoh.com)
->
-> This is a live demo with usage limits. For full access or a custom build, [get in touch](https://kingsleyonoh.com).
 
 <!-- THEATRE_LINK -->
 
