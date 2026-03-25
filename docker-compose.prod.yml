@@ -1,25 +1,26 @@
-# Production deployment with Traefik reverse proxy
-# Deploy: docker compose -f docker-compose.prod.yml up -d
+# Production deployment with Traefik reverse proxy (GHCR + Watchtower)
+# Deployed to: recon-engine.kingsleyonoh.com
 
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
+  recon-engine:
+    image: ghcr.io/kingsleyonoh/recon-engine:latest
     container_name: recon-engine
     restart: unless-stopped
-    env_file:
-      - .env
-    networks:
-      - traefik-public
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     labels:
-      # Traefik auto-discovery
       - "traefik.enable=true"
       - "traefik.http.routers.recon-engine.rule=Host(`recon-engine.kingsleyonoh.com`)"
       - "traefik.http.routers.recon-engine.entrypoints=websecure"
       - "traefik.http.routers.recon-engine.tls.certresolver=letsencrypt"
       - "traefik.http.services.recon-engine.loadbalancer.server.port=8080"
+    networks:
+      - traefik-public
+      - internal
     deploy:
       resources:
         limits:
@@ -31,6 +32,44 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  db:
+    image: postgres:16-alpine
+    container_name: recon-engine-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: reconciliation
+      POSTGRES_USER: recon
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recon -d reconciliation"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: recon-engine-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:
+  redis-data:
+
 networks:
   traefik-public:
     external: true
+  internal:
