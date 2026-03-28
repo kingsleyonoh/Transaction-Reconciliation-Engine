@@ -224,6 +224,10 @@ The production stack runs on a DigitalOcean VPS behind Traefik v3.6 with automat
 .\build-and-push.ps1
 ```
 
+## License
+
+This project is open-sourced under the [AGPLv3 license](LICENSE) for non-commercial and open-source use. For enterprise deployment without copyleft restrictions, commercial licenses and architecture support plans are available via [Klevar](https://kingsleyonoh.com).
+
 ---
 
 <!-- THEATRE_LINK -->
